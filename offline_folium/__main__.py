@@ -28,9 +28,13 @@ def download_url(url):
     with open(output_path, "w", encoding='utf-8') as f:
         f.write(contents)
 
-if __name__ == "__main__":
+def main():
+    """Main entry point for the offline-folium command."""
     print(f"Downloading files to {dest_path}")
     if len(sys.argv) > 1:
         download_all_files(sys.argv[1:])
     else:
         download_all_files()
+
+if __name__ == "__main__":
+    main()

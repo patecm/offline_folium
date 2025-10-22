@@ -2,11 +2,23 @@
 `offline_folium` is a Python module that makes it possible to use [folium](https://python-visualization.github.io/folium/) without an internet connection.
 
 ## Quickstart
-- Install offline_folium (`pip install offline_folium`)
-- When you have an internet connection, download the relevant Javascript/CSS by running `python -m offline_folium`
-- When you do not have an internet connection, run `from offline_folium import offline` _before_ you import folium, and then use folium normally. For example:
+- Install offline_folium:
 
+```bash
+pip install offline_folium
 ```
+
+- When you have an internet connection, download the relevant Javascript/CSS by running:
+```bash
+python -m offline_folium
+```
+- When you do not have an internet connection, run
+```python
+from offline_folium import offline
+```
+ _before_ you import folium, and then use `folium` normally. For example:
+
+```python
 from offline_folium import offline
 import folium
 

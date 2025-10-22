@@ -7,6 +7,6 @@ setup(
     author='Robin Wilson',
     author_email='robin@rtwilson.com',
     description='Allows using folium with no internet connection',
-    packages=find_packages('.'),    
-    install_requires=['folium'],
+    packages=find_packages('.'),
+    install_requires=['folium', 'setuptools<81'],
 )

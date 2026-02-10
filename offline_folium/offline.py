@@ -1,4 +1,4 @@
-import pkg_resources
+
 from branca.element import Figure, Element, CssLink
 from jinja2 import Template
 import os

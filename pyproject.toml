@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "offline-folium"
+version = "0.1.0"
+dependencies = ["folium>=0.14"]  # pick your supported floor
+requires-python = ">=3.9"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.package-data]
+offline_folium = ["local/**/*"]

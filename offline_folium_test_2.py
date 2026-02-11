@@ -134,7 +134,7 @@ def main() -> None:
 
     folium.LayerControl(collapsed=False).add_to(m)
 
-    out = Path("folium_h3_test_offline_2.html").resolve()
+    out = Path("folium_h3_test_offline2.html").resolve()
     m.save(str(out))
     print(f"Saved map to: {out}")
     print("Open that HTML file in your browser.")

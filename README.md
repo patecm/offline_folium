@@ -14,15 +14,25 @@ python -m offline_folium
 ```
 - When you do not have an internet connection, run
 ```python
-from offline_folium import offline
+from offline_folium import OfflineMap
 ```
- _before_ you import folium, and then use `folium` normally. For example:
+offline_folium does not need to be imported before folium.  
+
+To use, replace folium.Map with OfflineMap:
 
 ```python
 from offline_folium import offline
 import folium
 
-m = folium.Map()
+# Create the folium map
+m = OfflineMap(
+    location=[center_lat, center_lng],
+    zoom_start=12,
+    tiles="OpenStreetMap",  # change if you want other tiles
+    control_scale=True,
+)
+
+See offline_folium_test_map.py for another example
 ```
 
 ## Why?

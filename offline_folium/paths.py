@@ -21,7 +21,5 @@ def get_dest_path() -> Path:
         "Could not locate 'offline_folium/local' directory in package or repo."
     )
 
-#dest_path = resources.files("offline_folium").joinpath("local")
-
 dest_path = get_dest_path()
 

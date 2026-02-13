@@ -1,5 +1,6 @@
 """
 Quick smoke-test for: folium + h3
+** Test the OLD functionality from original forked repo **
 - Builds a folium map
 - Generates a small H3 disk around a center point
 - Draws each hexagon polygon on the map

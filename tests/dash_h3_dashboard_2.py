@@ -36,6 +36,7 @@ from offline_folium import OfflineMap
 import folium
 
 
+
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
@@ -56,7 +57,7 @@ def h3_cell_to_geojson_polygon(cell: str) -> dict:
 
 
 def create_density_map(df_hour: pd.DataFrame, center_lat: float, center_lng: float) -> str:
-    """Create folium map colored by density."""
+    """Create folium map colored by density. Returns HTML string."""
     m = OfflineMap(
         location=[center_lat, center_lng],
         zoom_start=6,
@@ -65,8 +66,7 @@ def create_density_map(df_hour: pd.DataFrame, center_lat: float, center_lng: flo
     )
     
     if len(df_hour) == 0:
-        m.save("temp_density_map.html")
-        return "temp_density_map.html"
+        return m._repr_html_()
     
     vmin = df_hour['density'].min()
     vmax = df_hour['density'].max()
@@ -89,7 +89,7 @@ def create_density_map(df_hour: pd.DataFrame, center_lat: float, center_lng: flo
         density = row['density']
         
         feature = h3_cell_to_geojson_polygon(cell)
-        fill_color = colormap(density)  # Use branca colormap to get color
+        fill_color = colormap(density)
         
         folium.GeoJson(
             feature,
@@ -105,13 +105,11 @@ def create_density_map(df_hour: pd.DataFrame, center_lat: float, center_lng: flo
     # Add the colorbar legend
     colormap.add_to(m)
     
-    # Save to temp file
-    m.save("temp_density_map.html")
-    return "temp_density_map.html"
+    return m._repr_html_()
 
 
 def create_score_map(df_hour: pd.DataFrame, center_lat: float, center_lng: float) -> str:
-    """Create folium map colored by score (0-1, blue to red via white)."""
+    """Create folium map colored by score (0-1, blue to red via white). Returns HTML string."""
     m = OfflineMap(
         location=[center_lat, center_lng],
         zoom_start=6,
@@ -120,8 +118,7 @@ def create_score_map(df_hour: pd.DataFrame, center_lat: float, center_lng: float
     )
     
     if len(df_hour) == 0:
-        m.save("temp_score_map.html")
-        return "temp_score_map.html"
+        return m._repr_html_()
     
     # Create colormap once and use for both hexagons and legend
     from branca.colormap import LinearColormap
@@ -141,10 +138,9 @@ def create_score_map(df_hour: pd.DataFrame, center_lat: float, center_lng: float
     for _, row in df_hour.iterrows():
         cell = row['h3_cell']
         score = row['score']
-        truth = row.get('truth', 0)  # Default to 0 if column doesn't exist
         
         feature = h3_cell_to_geojson_polygon(cell)
-        fill_color = colormap(score)  # Use branca colormap to get color
+        fill_color = colormap(score)
         
         folium.GeoJson(
             feature,
@@ -154,47 +150,13 @@ def create_score_map(df_hour: pd.DataFrame, center_lat: float, center_lng: float
                 "fillColor": color,
                 "fillOpacity": 0.6,
             },
-            tooltip=folium.Tooltip(f"H3: {cell}<br>Score: {score:.3f}<br>Truth: {truth}"),
+            tooltip=folium.Tooltip(f"H3: {cell}<br>Score: {score:.3f}"),
         ).add_to(m)
     
-    # Add star markers for truth=1 cells
-    # star marker
-    # icon_star = BeautifyIcon(
-    #     icon='star',
-    #     inner_icon_style='color:blue;font-size:30px;',
-    #     background_color='transparent',
-    #     border_color='transparent',
-    # )
-    icon_star = folium.Icon(
-        prefix='fa',       # Use Font-Awesome icons
-        icon='star',       # Specify the star icon
-        icon_color='blue', # Optional: Set the color of the icon
-        color='red'        # Optional: Set the color of the marker itself (pin color)
-    )
-
-    truth_cells = df_hour[df_hour['truth'] == 1]
-    for _, row in truth_cells.iterrows():
-        cell = row['h3_cell']
-        lat, lng = h3.cell_to_latlng(cell)
-        
-        folium.Marker(
-            location=[lat, lng],
-            icon=folium.Icon(color="red",
-                            icon="star",
-                            background_color='transparent',
-                            prefix='fa')
-        ).add_to(m)
-    
-
-
-        #folium.Marker([60, 125], tooltip='star', icon=icon_star).add_to(m)
-
     # Add the colorbar legend
     colormap.add_to(m)
     
-    # Save to temp file
-    m.save("temp_score_map.html")
-    return "temp_score_map.html"
+    return m._repr_html_()
 
 
 # ============================================================================
@@ -319,16 +281,9 @@ def update_maps(hour_idx):
     # Filter data for selected hour
     df_hour = df[df['hour'] == selected_hour].copy()
     
-    # Create maps
-    density_path = create_density_map(df_hour, center_lat, center_lng)
-    score_path = create_score_map(df_hour, center_lat, center_lng)
-    
-    # Read HTML content
-    with open(density_path, 'r', encoding='utf-8') as f:
-        density_html = f.read()
-    
-    with open(score_path, 'r', encoding='utf-8') as f:
-        score_html = f.read()
+    # Create maps and get HTML
+    density_html = create_density_map(df_hour, center_lat, center_lng)
+    score_html = create_score_map(df_hour, center_lat, center_lng)
     
     return (
         f"Showing data for: {selected_hour} ({len(df_hour)} cells)",

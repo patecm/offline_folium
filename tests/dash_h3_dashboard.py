@@ -25,6 +25,7 @@ from __future__ import annotations
 import pandas as pd
 import numpy as np
 import h3
+import tempfile
 from pathlib import Path
 from datetime import datetime
 
@@ -65,8 +66,10 @@ def create_density_map(df_hour: pd.DataFrame, center_lat: float, center_lng: flo
     )
     
     if len(df_hour) == 0:
-        m.save("temp_density_map.html")
-        return "temp_density_map.html"
+        temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False)
+        m.save(temp_file.name)
+
+        return temp_file.name
     
     vmin = df_hour['density'].min()
     vmax = df_hour['density'].max()
@@ -106,8 +109,9 @@ def create_density_map(df_hour: pd.DataFrame, center_lat: float, center_lng: flo
     colormap.add_to(m)
     
     # Save to temp file
-    m.save("temp_density_map.html")
-    return "temp_density_map.html"
+    temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False)
+    m.save(temp_file.name)
+    return temp_file.name
 
 
 def create_score_map(df_hour: pd.DataFrame, center_lat: float, center_lng: float) -> str:
@@ -115,13 +119,14 @@ def create_score_map(df_hour: pd.DataFrame, center_lat: float, center_lng: float
     m = OfflineMap(
         location=[center_lat, center_lng],
         zoom_start=6,
-        tiles="CartoDB positron",
+        tiles="OpenStreetMap",
         control_scale=True,
     )
     
     if len(df_hour) == 0:
-        m.save("temp_score_map.html")
-        return "temp_score_map.html"
+        temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False)
+        m.save(temp_file.name)
+        return temp_file.name
     
     # Create colormap once and use for both hexagons and legend
     from branca.colormap import LinearColormap
@@ -158,43 +163,47 @@ def create_score_map(df_hour: pd.DataFrame, center_lat: float, center_lng: float
         ).add_to(m)
     
     # Add star markers for truth=1 cells
-    # star marker
-    # icon_star = BeautifyIcon(
-    #     icon='star',
-    #     inner_icon_style='color:blue;font-size:30px;',
-    #     background_color='transparent',
-    #     border_color='transparent',
-    # )
-    icon_star = folium.Icon(
-        prefix='fa',       # Use Font-Awesome icons
-        icon='star',       # Specify the star icon
-        icon_color='blue', # Optional: Set the color of the icon
-        color='red'        # Optional: Set the color of the marker itself (pin color)
-    )
-
+    #from folium.plugins import BeautifyIcon
+    
     truth_cells = df_hour[df_hour['truth'] == 1]
     for _, row in truth_cells.iterrows():
         cell = row['h3_cell']
         lat, lng = h3.cell_to_latlng(cell)
         
-        folium.Marker(
+        folium.CircleMarker(
             location=[lat, lng],
-            icon=folium.Icon(color="red",
-                            icon="star",
-                            background_color='transparent',
-                            prefix='fa')
+            radius=3,
+            color='red',
+            weight=1,
+            fill=True,
+            fillColor='red',
+            fillOpacity=1.0,
+            tooltip=f"Truth=1<br>H3: {cell}<br>Score: {row['score']:.3f}"
         ).add_to(m)
+
+        # Use BeautifyIcon for a clean star marker
+        # icon = BeautifyIcon(
+        #     icon='star',
+        #     icon_shape='circle',  # Flat circle, not a pin
+        #     border_color='black',
+        #     border_width=2,
+        #     background_color='yellow',
+        #     text_color='black'
+        # )
+        
+        # folium.Marker(
+        #     location=[lat, lng],
+        #     icon=icon,
+        #     tooltip=f"Truth=1<br>H3: {cell}<br>Score: {row['score']:.3f}"
+        # ).add_to(m)
     
-
-
-        #folium.Marker([60, 125], tooltip='star', icon=icon_star).add_to(m)
-
     # Add the colorbar legend
     colormap.add_to(m)
     
     # Save to temp file
-    m.save("temp_score_map.html")
-    return "temp_score_map.html"
+    temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False)
+    m.save(temp_file.name)
+    return temp_file.name
 
 
 # ============================================================================
@@ -315,13 +324,18 @@ app.layout = html.Div([
 def update_maps(hour_idx):
     """Update both maps when slider changes."""
     selected_hour = hours[hour_idx]
-    
     # Filter data for selected hour
     df_hour = df[df['hour'] == selected_hour].copy()
+
+    print(f"Hour: {selected_hour}, Rows: {len(df_hour)}")  # Add this
+    print(f"Sample data:\n{df_hour.head()}")  # Add this
     
     # Create maps
     density_path = create_density_map(df_hour, center_lat, center_lng)
     score_path = create_score_map(df_hour, center_lat, center_lng)
+
+    print(f"Density map path: {density_path}")
+    print(f"Score map path: {score_path}")
     
     # Read HTML content
     with open(density_path, 'r', encoding='utf-8') as f:

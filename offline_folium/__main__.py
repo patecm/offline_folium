@@ -22,8 +22,7 @@ AVAILABLE_PLUGINS = {
     "floatimage": folium.plugins.FloatImage,
     "groupedlayercontrol": folium.plugins.GroupedLayerControl,
     "heatmapwithtime": folium.plugins.HeatMapWithTime,
-    "fastmarkercluster": folium.plugins.FastMarkerCluster,
-    "beautifyicon": folium.plugins.BeautifyIcon,
+    "fastmarkercluster": folium.plugins.FastMarkerCluster
 }
 
 

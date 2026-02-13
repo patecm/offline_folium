@@ -159,17 +159,11 @@ def create_score_map(df_hour: pd.DataFrame, center_lat: float, center_lng: float
     
     # Add star markers for truth=1 cells
     # star marker
-    # icon_star = BeautifyIcon(
-    #     icon='star',
-    #     inner_icon_style='color:blue;font-size:30px;',
-    #     background_color='transparent',
-    #     border_color='transparent',
-    # )
-    icon_star = folium.Icon(
-        prefix='fa',       # Use Font-Awesome icons
-        icon='star',       # Specify the star icon
-        icon_color='blue', # Optional: Set the color of the icon
-        color='red'        # Optional: Set the color of the marker itself (pin color)
+    icon_star = BeautifyIcon(
+        icon='star',
+        inner_icon_style='color:blue;font-size:30px;',
+        background_color='transparent',
+        border_color='transparent',
     )
 
     truth_cells = df_hour[df_hour['truth'] == 1]
@@ -179,10 +173,8 @@ def create_score_map(df_hour: pd.DataFrame, center_lat: float, center_lng: float
         
         folium.Marker(
             location=[lat, lng],
-            icon=folium.Icon(color="red",
-                            icon="star",
-                            background_color='transparent',
-                            prefix='fa')
+            tooltip='star', 
+            icon=icon_star
         ).add_to(m)
     
 

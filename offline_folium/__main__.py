@@ -18,6 +18,11 @@ AVAILABLE_PLUGINS = {
     "minimap": folium.plugins.MiniMap,
     "mouseposition": folium.plugins.MousePosition,
     "fullscreen": folium.plugins.Fullscreen,
+    "timestampedgeojson": folium.plugins.TimestampedGeoJson,
+    "floatimage": folium.plugins.FloatImage,
+    "groupedlayercontrol": folium.plugins.GroupedLayerControl,
+    "heatmapwithtime": folium.plugins.HeatMapWithTime,
+    "fastmarkercluster": folium.plugins.FastMarkerCluster,
     "beautifyicon": folium.plugins.BeautifyIcon,
 }
 

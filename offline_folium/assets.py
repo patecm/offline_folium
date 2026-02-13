@@ -1,49 +1,34 @@
-from __future__ import annotations
+"""Asset URL resolution - maps remote URLs to local files."""
 
-from importlib import resources
 from pathlib import Path
-from typing import Dict, Optional
-
-
-def local_dir() -> Path:
-    """
-    Returns a real filesystem path to offline_folium/local.
-
-    Works for normal installs and editable installs when files are present.
-    If you later need true zip-safety, we can add resources.as_file() wrapping,
-    but for local-repo installs this is enough.
-    """
-    p = resources.files("offline_folium").joinpath("local")
-    # p can be Traversable; cast through Path if it's already a filesystem path-like
-    return Path(str(p))
-
-
-def local_file(filename: str) -> str:
-    return str(local_dir() / filename)
-
-
-# Canonical mapping: CDN/remote URLs -> local filenames
-# Keep keys as "basename" OR full URL; support both.
-URL_MAP: Dict[str, str] = {
-    # Leaflet (examples; match whatever folium ships in your version)
-    "leaflet.js": "leaflet.js",
-    "leaflet.css": "leaflet.css",
-
-    # Common plugin assets you bundle:
-    "leaflet.awesome-markers.js": "leaflet.awesome-markers.js",
-    "leaflet.awesome-markers.css": "leaflet.awesome-markers.css",
-    # Add others as needed...
-}
+from typing import Optional
+from .paths import LOCAL_DIR
 
 
 def resolve_url_to_local(url: str) -> Optional[str]:
     """
-    Given a URL from folium/plugin default_js/default_css, return the local path
-    if we have it, else None.
+    Given a remote URL, return the local file path if we have it downloaded.
+    
+    Args:
+        url: Remote URL (e.g., https://cdn.../leaflet.js)
+        
+    Returns:
+        Local file path if it exists, None otherwise
     """
-    basename = url.rsplit("/", 1)[-1]
-    if url in URL_MAP:
-        return local_file(URL_MAP[url])
-    if basename in URL_MAP:
-        return local_file(URL_MAP[basename])
+    if not url.startswith(("http://", "https://")):
+        # Already a local path or data URI
+        return None
+    
+    # Extract filename from URL (handles query strings)
+    filename = url.split("?")[0].rsplit("/", 1)[-1]
+    
+    if not filename:
+        return None
+    
+    local_file = LOCAL_DIR / filename
+    
+    # Only return if file actually exists
+    if local_file.exists():
+        return str(local_file)
+    
     return None

@@ -1,39 +1,126 @@
 # Offline Folium
-`offline_folium` is a Python module that makes it possible to use [folium](https://python-visualization.github.io/folium/) without an internet connection.
 
-## Quickstart
-- Install offline_folium:
+Use [folium](https://python-visualization.github.io/folium/) maps without an internet connection.
+
+## Installation
 
 ```bash
-pip install offline_folium
+pip install offline-folium
 ```
 
-- When you have an internet connection, download the relevant Javascript/CSS by running:
+Or for development:
 ```bash
-python -m offline_folium
+pip install -e .
 ```
-- When you do not have an internet connection, run
+
+## Quick Start
+
+### 1. Download Assets (when you have internet)
+
+Download the plugins you need:
+
+```bash
+# Download Map + HeatMap
+python -m offline_folium heatmap
+
+# Download multiple plugins
+python -m offline_folium heatmap markercluster draw
+
+# Download everything
+python -m offline_folium --all
+
+# See all available plugins
+python -m offline_folium --help
+```
+
+This downloads all required JavaScript and CSS files to `offline_folium/local/`.
+
+### 2. Create Maps Offline
+
 ```python
 from offline_folium import OfflineMap
-```
-offline_folium does not need to be imported before folium.  
+import folium.plugins
 
-To use, replace folium.Map with OfflineMap:
+# Use exactly like folium.Map
+m = OfflineMap(
+    location=[45.5, -122.5],
+    zoom_start=13,
+    tiles="OpenStreetMap"
+)
+```
+  
+Available maps: 
+- "OpenStreetMap"  
+- "CartoDB positron"  
+- "CartoDB dark_matter"  
+- "Stamen Toner"  
+- "Stamen Watercolor"  
 
 ```python
-from offline_folium import offline
-import folium
-
-# Create the folium map
-m = OfflineMap(
-    location=[center_lat, center_lng],
-    zoom_start=12,
-    tiles="OpenStreetMap",  # change if you want other tiles
-    control_scale=True,
-)
-
-See offline_folium_test_map.py for another example
+m = OfflineMap(location=[39.7, -104.9], zoom_start=12, tiles="CartoDB positron")
 ```
 
-## Why?
-By default, folium loads the required Javascript and CSS from CDNs over the internet. This doesn't work when you need to run folium offline. This project helps with that by allowing you to download the required resources when you have an internet connection (or during the application build/deploy process) and then use folium later on with those downloaded resources. The aim is to package it all up so that it is nice and simple for end-users (who may not be folium or Python specialists) to use.
+# Add a heatmap
+heat_data = [[45.52, -122.68], [45.53, -122.67]]
+folium.plugins.HeatMap(heat_data).add_to(m)
+
+# Save - works completely offline!
+m.save("my_map.html")
+```
+
+## Available Plugins
+
+Download any combination of:
+- `heatmap` - HeatMap plugin
+- `markercluster` - MarkerCluster plugin
+- `draw` - Draw plugin
+- `minimap` - MiniMap plugin
+- `mouseposition` - MousePosition plugin
+- `fullscreen` - Fullscreen plugin
+- `timestampedgeojson` - TimestampedGeoJson (animate data over time)
+- `floatimage` - FloatImage (add images/logos to map)
+- `groupedlayercontrol` - GroupedLayerControl (advanced layer management)
+- `heatmapwithtime` - HeatMapWithTime (animated heatmaps)
+- `fastmarkercluster` - FastMarkerCluster (performance version)
+
+## Download Options
+
+```bash
+# Download specific plugins
+python -m offline_folium heatmap markercluster
+
+# Download all available plugins
+python -m offline_folium --all
+
+# Force re-download existing files
+python -m offline_folium heatmap --force
+
+# See help
+python -m offline_folium --help
+```
+
+## How It Works
+
+When you call `m.render()` or `m.save()`, OfflineMap automatically:
+1. Walks through the map and all child elements (markers, plugins, etc.)
+2. Finds any remote URLs for JS/CSS files
+3. Replaces them with local file paths if the files were downloaded
+4. Falls back to CDN URLs if local files are missing (requires internet)
+
+**For true offline use:** Make sure to download all plugins you'll need before going offline!
+
+## Example Workflow
+
+```bash
+# 1. While online, download what you need
+python -m offline_folium heatmap markercluster
+
+# 2. Disconnect from internet
+
+# 3. Create maps offline
+python my_script.py
+```
+
+## License
+
+MIT

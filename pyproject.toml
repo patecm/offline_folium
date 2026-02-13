@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "offline-folium"
 version = "0.1.0"
-description = "Allows using folium with no internet connection. Fork of repo by Robin Wilson"
+description = "Use folium maps without an internet connection"
 readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.11"
 authors = [
@@ -14,8 +14,6 @@ authors = [
 urls = { Homepage = "https://github.com/patecm/offline_folium" }
 dependencies = [
   "folium>=0.14",
-  "setuptools<81",
-  "requests",
 ]
 
 [tool.setuptools]
@@ -23,9 +21,7 @@ include-package-data = true
 
 [tool.setuptools.packages.find]
 where = ["."]
-# (optional) if you only ever want the offline_folium package:
-# include = ["offline_folium*"]
+include = ["offline_folium*"]
 
 [tool.setuptools.package-data]
 offline_folium = ["local/**/*"]
-# offline_folium = ["local/*"]

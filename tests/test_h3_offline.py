@@ -1,17 +1,19 @@
 """
-Quick smoke-test for: folium + h3
-** Test the OLD functionality from original forked repo **
-- Builds a folium map
+Quick smoke-test for: offline_folium + h3
+- Builds an offline folium map
 - Generates a small H3 disk around a center point
 - Draws each hexagon polygon on the map
 - Colors hexes by a fake "value" (random)
 - Saves to an HTML file you can open in a browser
 
 Install (one-time):
-  pip install folium h3 numpy
+  pip install offline-folium h3 numpy
 
-Run:
-  python test_folium_h3.py
+Setup (one-time, requires internet):
+  python -m offline_folium  # Downloads assets for offline use
+
+Run (works offline):
+  python test_h3_offline.py
 """
 
 from __future__ import annotations
@@ -19,7 +21,7 @@ from __future__ import annotations
 import random
 from pathlib import Path
 
-from offline_folium import offline #MUST import BEFORE folium
+from offline_folium import OfflineMap
 import folium
 import numpy as np
 import h3
@@ -63,7 +65,7 @@ def color_for_value(v: float, vmin: float, vmax: float) -> str:
 
 
 def main() -> None:
-    # Pick a center (Denver-ish). Change to wherever you like.
+    # Pick a center (Denver). Change to wherever you like.
     center_lat, center_lng = 39.7392, -104.9903
 
     # H3 resolution: 7 ~ neighborhood-scale; 8/9 more detailed; 6 bigger
@@ -80,20 +82,43 @@ def main() -> None:
     values = {c: rng.random() for c in cells}
     vmin, vmax = min(values.values()), max(values.values())
 
-    # Create the folium map
-    m = folium.Map(
+    # Create the OFFLINE folium map
+    # This will use local assets if they've been downloaded
+    m = OfflineMap(
         location=[center_lat, center_lng],
         zoom_start=12,
-        tiles="OpenStreetMap",  # change if you want other tiles
         control_scale=True,
     )
+    # Add Options for different tile layers
+    folium.TileLayer(
+        tiles="CartoDB dark_matter",
+        name="CartoDB Dark",
+        overlay=False,  # This makes it a basemap, not an overlay
+        control=True,
+    ).add_to(m)
+
+    # Add Options for different tile layers
+    folium.TileLayer(
+        tiles="CartoDB positron",
+        name="CartoDB Positron",
+        overlay=False,  # This makes it a basemap, not an overlay
+        control=True,
+    ).add_to(m)
+
+
+    # folium.TileLayer(
+    #     tiles="OpenStreetMap",
+    #     name="OpenStreeMap",
+    #     overlay=False,
+    #     control=True,
+    # ).add_to(m)
 
     # Add center marker
-    folium.Marker(
-        location=[center_lat, center_lng],
-        tooltip=f"Center (H3 res={res})",
-        icon=folium.Icon(color="blue", icon="info-sign"),
-    ).add_to(m)
+    # folium.Marker(
+    #     location=[center_lat, center_lng],
+    #     tooltip=f"Center (H3 res={res})",
+    #     icon=folium.Icon(color="blue", icon="info-sign"),
+    # ).add_to(m)
 
     # Draw each hex polygon
     hex_layer = folium.FeatureGroup(name=f"H3 hexes (res={res}, k={k})", show=True)
@@ -137,8 +162,8 @@ def main() -> None:
 
     out = Path("folium_h3_test_offline.html").resolve()
     m.save(str(out))
-    print(f"Saved map to: {out}")
-    print("Open that HTML file in your browser.")
+    print(f"✓ Saved offline map to: {out}")
+    print("  Open that HTML file in your browser (works without internet!)")
 
 
 if __name__ == "__main__":

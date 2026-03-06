@@ -1,7 +1,7 @@
 """
 Interactive Dash Dashboard with H3 + Offline Folium
 - Time slider to select hour
-- Left map: H3 cells colored by density
+- Left map: H3 cells colored by density  
 - Right map: H3 cells colored by score (0-1, blue to red via white)
 
 Configuration:
@@ -36,7 +36,6 @@ from offline_folium import OfflineMap
 import folium
 
 
-
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
@@ -56,8 +55,80 @@ def h3_cell_to_geojson_polygon(cell: str) -> dict:
     }
 
 
+def create_colormap_density(value: float, vmin: float, vmax: float) -> str:
+    """Create plasma-like colormap for density (purple -> pink -> orange -> yellow)."""
+    if vmax <= vmin:
+        t = 0.5
+    else:
+        t = (value - vmin) / (vmax - vmin)
+    t = float(np.clip(t, 0.0, 1.0))
+    
+    # Plasma colormap approximation
+    # Dark purple -> bright purple -> pink -> orange -> yellow
+    if t < 0.25:
+        # Dark purple to bright purple
+        s = t * 4
+        r = int(13 + s * (100 - 13))
+        g = int(8 + s * (0 - 8))
+        b = int(135 + s * (200 - 135))
+    elif t < 0.5:
+        # Bright purple to pink
+        s = (t - 0.25) * 4
+        r = int(100 + s * (180 - 100))
+        g = int(0 + s * (55 - 0))
+        b = int(200 + s * (130 - 200))
+    elif t < 0.75:
+        # Pink to orange
+        s = (t - 0.5) * 4
+        r = int(180 + s * (240 - 180))
+        g = int(55 + s * (100 - 55))
+        b = int(130 + s * (25 - 130))
+    else:
+        # Orange to yellow
+        s = (t - 0.75) * 4
+        r = int(240 + s * (252 - 240))
+        g = int(100 + s * (230 - 100))
+        b = int(25 + s * (37 - 25))
+    
+    return f"#{r:02x}{g:02x}{b:02x}"
+
+
+def create_colormap_score(value: float, threshold: float = THRESHOLD) -> str:
+    """
+    Create seismic-like colormap for score (blue -> white -> red).
+    
+    Args:
+        value: Score value (0-1)
+        threshold: Where white appears (default: THRESHOLD global setting)
+    """
+    # Clamp to 0-1
+    v = float(np.clip(value, 0.0, 1.0))
+    
+    # Seismic: blue (0) -> white (threshold) -> red (1)
+    if v < threshold:
+        # Blue to White
+        if threshold > 0:
+            t = v / threshold
+        else:
+            t = 0
+        r = int(0 + t * 255)
+        g = int(0 + t * 255)
+        b = int(255)
+    else:
+        # White to Red
+        if threshold < 1:
+            t = (v - threshold) / (1.0 - threshold)
+        else:
+            t = 0
+        r = int(255)
+        g = int(255 - t * 255)
+        b = int(255 - t * 255)
+    
+    return f"#{r:02x}{g:02x}{b:02x}"
+
+
 def create_density_map(df_hour: pd.DataFrame, center_lat: float, center_lng: float) -> str:
-    """Create folium map colored by density. Returns HTML string."""
+    """Create folium map colored by density."""
     m = OfflineMap(
         location=[center_lat, center_lng],
         zoom_start=6,
@@ -66,22 +137,11 @@ def create_density_map(df_hour: pd.DataFrame, center_lat: float, center_lng: flo
     )
     
     if len(df_hour) == 0:
-        return m._repr_html_()
+        m.save("temp_density_map.html")
+        return "temp_density_map.html"
     
     vmin = df_hour['density'].min()
     vmax = df_hour['density'].max()
-    
-    # Create colormap once and use for both hexagons and legend
-    from branca.colormap import LinearColormap
-    
-    # Plasma-like colormap
-    colors = ['#0d0887', '#6400c8', '#b42c8c', '#f07030', '#fce225']
-    colormap = LinearColormap(
-        colors=colors,
-        vmin=vmin,
-        vmax=vmax,
-        caption='Density'
-    )
     
     # Add hexagons
     for _, row in df_hour.iterrows():
@@ -89,7 +149,7 @@ def create_density_map(df_hour: pd.DataFrame, center_lat: float, center_lng: flo
         density = row['density']
         
         feature = h3_cell_to_geojson_polygon(cell)
-        fill_color = colormap(density)
+        fill_color = create_colormap_density(density, vmin, vmax)
         
         folium.GeoJson(
             feature,
@@ -102,14 +162,13 @@ def create_density_map(df_hour: pd.DataFrame, center_lat: float, center_lng: flo
             tooltip=folium.Tooltip(f"H3: {cell}<br>Density: {density:.2f}"),
         ).add_to(m)
     
-    # Add the colorbar legend
-    colormap.add_to(m)
-    
-    return m._repr_html_()
+    # Save to temp file
+    m.save("temp_density_map.html")
+    return "temp_density_map.html"
 
 
 def create_score_map(df_hour: pd.DataFrame, center_lat: float, center_lng: float) -> str:
-    """Create folium map colored by score (0-1, blue to red via white). Returns HTML string."""
+    """Create folium map colored by score (0-1, blue to red via white)."""
     m = OfflineMap(
         location=[center_lat, center_lng],
         zoom_start=6,
@@ -118,21 +177,8 @@ def create_score_map(df_hour: pd.DataFrame, center_lat: float, center_lng: float
     )
     
     if len(df_hour) == 0:
-        return m._repr_html_()
-    
-    # Create colormap once and use for both hexagons and legend
-    from branca.colormap import LinearColormap
-    
-    colors = ['#0000ff', '#ffffff', '#ff0000']
-    index = [0.0, THRESHOLD, 1.0]
-    
-    colormap = LinearColormap(
-        colors=colors,
-        index=index,
-        vmin=0.0,
-        vmax=1.0,
-        caption=f'Score (white at {THRESHOLD})'
-    )
+        m.save("temp_score_map.html")
+        return "temp_score_map.html"
     
     # Add hexagons
     for _, row in df_hour.iterrows():
@@ -140,7 +186,7 @@ def create_score_map(df_hour: pd.DataFrame, center_lat: float, center_lng: float
         score = row['score']
         
         feature = h3_cell_to_geojson_polygon(cell)
-        fill_color = colormap(score)
+        fill_color = create_colormap_score(score)
         
         folium.GeoJson(
             feature,
@@ -153,10 +199,9 @@ def create_score_map(df_hour: pd.DataFrame, center_lat: float, center_lng: float
             tooltip=folium.Tooltip(f"H3: {cell}<br>Score: {score:.3f}"),
         ).add_to(m)
     
-    # Add the colorbar legend
-    colormap.add_to(m)
-    
-    return m._repr_html_()
+    # Save to temp file
+    m.save("temp_score_map.html")
+    return "temp_score_map.html"
 
 
 # ============================================================================
@@ -164,16 +209,7 @@ def create_score_map(df_hour: pd.DataFrame, center_lat: float, center_lng: float
 # ============================================================================
 
 def create_sample_data() -> pd.DataFrame:
-    """
-    Create sample data - REPLACE THIS with your actual data loading.
-    
-    Expected columns:
-    - hour: timestamp string (format: YYYY-MM-DD_HH)
-    - h3_cell: H3 cell index
-    - score: float (0-1)
-    - density: float (no upper bound)
-    - truth: int (0 or 1) - marks cells with truth=1 with a star on map 2
-    """
+    """Create sample data - REPLACE THIS with your actual data loading."""
     np.random.seed(42)
     
     # Generate sample hours
@@ -195,7 +231,7 @@ def create_sample_data() -> pd.DataFrame:
                 'h3_cell': cell,
                 'score': np.random.random(),  # 0-1
                 'density': np.random.exponential(scale=50),  # Positive, no upper bound
-                'truth': np.random.choice([0, 1], p=[0.7, 0.3]),  # 70% zeros, 30% ones
+                'truth': np.random.choice([0, 1], p=[0.9, 0.1])  # Optional truth column
             })
     
     return pd.DataFrame(data)
@@ -255,7 +291,7 @@ app.layout = html.Div([
         
         # Score map (right)
         html.Div([
-            html.H3("Score Map (0=Green, 1=Red)", style={'textAlign': 'center'}),
+            html.H3("Score Map (0=Blue, 1=Red)", style={'textAlign': 'center'}),
             html.Iframe(
                 id='score-map',
                 srcDoc='',
@@ -281,9 +317,16 @@ def update_maps(hour_idx):
     # Filter data for selected hour
     df_hour = df[df['hour'] == selected_hour].copy()
     
-    # Create maps and get HTML
-    density_html = create_density_map(df_hour, center_lat, center_lng)
-    score_html = create_score_map(df_hour, center_lat, center_lng)
+    # Create maps
+    density_path = create_density_map(df_hour, center_lat, center_lng)
+    score_path = create_score_map(df_hour, center_lat, center_lng)
+    
+    # Read HTML content
+    with open(density_path, 'r', encoding='utf-8') as f:
+        density_html = f.read()
+    
+    with open(score_path, 'r', encoding='utf-8') as f:
+        score_html = f.read()
     
     return (
         f"Showing data for: {selected_hour} ({len(df_hour)} cells)",

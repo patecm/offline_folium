@@ -32,10 +32,15 @@ def download_file(url: str, dest: Path) -> bool:
         # Use Request with headers to avoid 403 errors
         req = Request(url, headers={"User-Agent": "offline-folium/0.1.0"})
         
-        print(f"  Downloading {dest.name}...")
-        content = urlopen(req, timeout=30).read()
+        print(f"  Downloading {dest.name} from {url}...")
+        #content = urlopen(req, timeout=30).read()
+        #dest.write_bytes(content)
+        content = urlopen(url).read().decode("utf8")
+        with open(dest, "w", encoding='utf-8') as f:
+            f.write(content)
+
+
         
-        dest.write_bytes(content)
         print(f"    ✓ Saved ({len(content)} bytes)")
         return True
         
